@@ -24,6 +24,7 @@ import java.text.DecimalFormatSymbols;
 import java.text.NumberFormat;
 import java.text.ParseException;
 import java.util.Date;
+import java.util.regex.Pattern;
 
 import org.apache.metamodel.query.QueryParameter;
 import org.apache.metamodel.schema.ColumnType;
@@ -33,11 +34,15 @@ import org.apache.metamodel.schema.ColumnType;
  */
 public final class FormatHelper {
 
+    private static Pattern DATE_PATTERN = Pattern.compile("(?:(?:DATE *['(\"])|(?:['(\"]))?([^')\"]*)[')\"]?");
+    private static Pattern TIME_PATTERN = Pattern.compile("(?:(?:TIME *['(\"])|(?:['(\"]))?([^')\"]*)[')\"]?");
+    private static Pattern TIMESTAMP_PATTERN = Pattern.compile("(?:(?:TIMESTAMP *['(\"])|(?:['(\"]))?([^')\"]*)[')\"]?");
+
     /**
      * Creates a uniform number format which is similar to that of eg. Java
      * doubles. The format will not include thousand separators and it will use
      * a dot as a decimal separator.
-     * 
+     *
      * @return
      */
     public static NumberFormat getUiNumberFormat() {
@@ -77,7 +82,7 @@ public final class FormatHelper {
     /**
      * Formats a date according to a specific column type (DATE, TIME or
      * TIMESTAMP)
-     * 
+     *
      * @param columnType
      *            the column type
      * @param date
@@ -91,7 +96,7 @@ public final class FormatHelper {
     /**
      * Formats a date according to a specific column type (DATE, TIME or
      * TIMESTAMP)
-     * 
+     *
      * @param columnType
      *            the column type
      * @param date
@@ -137,7 +142,7 @@ public final class FormatHelper {
     /**
      * Formats a date according to a specific column type (DATE, TIME or
      * TIMESTAMP). For backward compatibility.
-     * 
+     *
      * @param columnType
      * @param date
      * @param typeCastDeclaration
@@ -149,7 +154,7 @@ public final class FormatHelper {
 
     /**
      * Parses a SQL string representation of a time based value
-     * 
+     *
      * @param columnType
      * @param value
      * @return
@@ -158,11 +163,14 @@ public final class FormatHelper {
         final String[] formats;
         if (columnType.isTimeBased()) {
             if (columnType == ColumnType.DATE) {
+                value = DATE_PATTERN.matcher(value).replaceFirst("$1");
                 formats = new String[] { "yyyy-MM-dd" };
             } else if (columnType == ColumnType.TIME) {
-                formats = new String[] { "HH:mm:ss", "HH:mm" };
+                value = TIME_PATTERN.matcher(value).replaceFirst("$1");
+                formats = new String[] { "HH:mm:ss.SSS", "HH:mm:ss", "HH:mm" };
             } else {
-                formats = new String[] { "yyyy-MM-dd HH:mm:ss", "yyyy-MM-dd HH:mm", "yyyy-MM-dd" };
+                value = TIMESTAMP_PATTERN.matcher(value).replaceFirst("$1");
+                formats = new String[] { "yyyy-MM-dd HH:mm:ss.SSS", "yyyy-MM-dd HH:mm:ss", "yyyy-MM-dd HH:mm", "yyyy-MM-dd" };
             }
         } else {
             throw new IllegalArgumentException("Cannot parse time value of type: " + columnType);
